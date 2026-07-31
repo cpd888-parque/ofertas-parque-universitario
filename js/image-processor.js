@@ -17,8 +17,17 @@
  *   const resultado = await ImageProcessor.process(file, CONFIG.imageStandardization);
  *   // resultado.file      -> File .jpg padronizado, pronto para o upload
  *   // resultado.objectUrl -> URL do resultado para preview
+ *
+ * PDFs (primeira página) também podem ser convertidos em imagem:
+ *   const resultado = await ImageProcessor.fromPDF(file, CONFIG.imageStandardization);
  */
 const ImageProcessor = (() => {
+
+    // CDN do pdf.js (carregado no admin.html antes deste script)
+    const PDFJS_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174';
+    if (typeof window !== 'undefined' && window.pdfjsLib && !window.pdfjsLib.GlobalWorkerOptions.workerSrc) {
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_CDN + '/pdf.worker.min.js';
+    }
 
     function getOptions(userOpts = {}) {
         return {
@@ -146,5 +155,54 @@ const ImageProcessor = (() => {
         }
     }
 
-    return { process, getOptions };
+    /**
+     * Converte um PDF em imagem (JPEG) — renderiza a primeira página.
+     * @param {File} file        - Arquivo PDF original
+     * @param {Object} userOpts  - Opções (mescladas com CONFIG.imageStandardization)
+     * @returns {Promise<{file: File, objectUrl: string, width: number, height: number}>}
+     */
+    async function fromPDF(file, userOpts = {}) {
+        if (!window.pdfjsLib) {
+            throw new Error('Biblioteca PDF (pdf.js) não carregada');
+        }
+
+        const opts = getOptions(userOpts);
+        const data = await file.arrayBuffer();
+        const pdf = await window.pdfjsLib.getDocument({ data }).promise;
+
+        try {
+            const page = await pdf.getPage(1);
+            const vp1 = page.getViewport({ scale: 1 });
+
+            // Renderiza cabendo dentro do tamanho máximo (sem ampliar demais),
+            // limitado a 3x para não gerar telas gigantes.
+            const scale = Math.min(3, opts.width / vp1.width, opts.height / vp1.height);
+            const viewport = page.getViewport({ scale });
+
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.max(1, Math.floor(viewport.width));
+            canvas.height = Math.max(1, Math.floor(viewport.height));
+            const ctx = canvas.getContext('2d');
+
+            await page.render({ canvasContext: ctx, viewport }).promise;
+
+            const blob = await new Promise((resolve, reject) => {
+                canvas.toBlob((b) => b ? resolve(b) : reject(new Error('Falha ao converter imagem')), 'image/jpeg', opts.quality);
+            });
+
+            const nome = (file.name.replace(/\.pdf$/i, '') || 'oferta') + '.jpg';
+            const processedFile = new File([blob], nome, { type: 'image/jpeg', lastModified: Date.now() });
+
+            return {
+                file: processedFile,
+                objectUrl: URL.createObjectURL(processedFile),
+                width: canvas.width,
+                height: canvas.height
+            };
+        } finally {
+            try { await pdf.destroy(); } catch (e) { /* ignora */ }
+        }
+    }
+
+    return { process, getOptions, fromPDF };
 })();

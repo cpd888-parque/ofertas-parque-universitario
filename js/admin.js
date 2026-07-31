@@ -300,20 +300,20 @@ class AdminPanel {
 
         const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
 
-        // Imagens passam pela padronização ANTES do upload (ImageProcessor),
-        // garantindo tamanho/proporção uniformes sem barras brancas.
-        if (!isPDF) {
-            try {
-                this.showUploadMessage('Padronizando imagem...', 'info');
-                const result = await ImageProcessor.process(file, CONFIG.imageStandardization);
-                this.processedFile = result.file;
-                this.previewObjectUrl = result.objectUrl;
-            } catch (e) {
-                console.warn('Não foi possível padronizar, enviando original:', e);
-                this.processedFile = file;
-            }
-            this.hideUploadMessage();
+        // Imagens são padronizadas; PDFs são convertidos em imagem (primeira página),
+        // para que a oferta apareça como imagem na tela (igual aos flyers).
+        try {
+            this.showUploadMessage(isPDF ? 'Convertendo PDF para imagem...' : 'Padronizando imagem...', 'info');
+            const result = isPDF
+                ? await ImageProcessor.fromPDF(file, CONFIG.imageStandardization)
+                : await ImageProcessor.process(file, CONFIG.imageStandardization);
+            this.processedFile = result.file;
+            this.previewObjectUrl = result.objectUrl;
+        } catch (e) {
+            console.warn('Não foi possível processar, enviando arquivo original:', e);
+            this.processedFile = file;
         }
+        this.hideUploadMessage();
 
         this.showPreview(file);
         this.confirmUploadBtn.disabled = false;
@@ -324,14 +324,17 @@ class AdminPanel {
         this.previewArea.classList.remove('hidden');
         this.uploadMessage.classList.add('hidden');
 
-        if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+        const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+
+        // PDF que não pôde ser convertido mantém o fallback de visualização
+        if (isPDF && !this.previewObjectUrl) {
             this.previewImage.classList.add('hidden');
             this.previewPDF.classList.remove('hidden');
             this.pdfFileName.textContent = file.name;
         } else {
             this.previewPDF.classList.add('hidden');
             this.previewImage.classList.remove('hidden');
-            // Mostrar a imagem JÁ padronizada (exatamente como será publicada)
+            // Mostrar a imagem já processada (exatamente como será publicada)
             this.previewImage.src = this.previewObjectUrl || URL.createObjectURL(file);
         }
     }
