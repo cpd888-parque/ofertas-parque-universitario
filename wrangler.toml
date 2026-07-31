@@ -1,0 +1,28 @@
+name = "ofertas-parque-universitario"
+main = "workers/oferta-worker.js"
+compatibility_date = "2026-07-01"
+
+# ===========================================
+# Bucket R2 para armazenar as imagens/PDFs
+# ===========================================
+[[r2_buckets]]
+binding = "OFERTAS_BUCKET"
+bucket_name = "ofertas-supermercado"
+
+# ===========================================
+# Variáveis de ambiente (sensíveis)
+# Use `npx wrangler secret put ADMIN_PASSWORD` em produção
+# ===========================================
+# [vars]
+# ADMIN_PASSWORD = "admin123"
+
+# ===========================================
+# Rotas do Worker (opcional - usar com Pages)
+# ===========================================
+# Se usar Cloudflare Pages + Functions, 
+# coloque este worker em /functions/api/[[route]].js
+#
+# Se usar Worker standalone, defina a rota:
+# routes = [
+#   { pattern = "seudominio.com/api/*", zone_id = "<zone-id>" }
+# ]

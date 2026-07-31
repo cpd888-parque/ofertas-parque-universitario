@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0f0f0f">
+    <title>Painel Administrativo</title>
+
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/admin.css">
+
+    <script src="config/config.js"></script>
+</head>
+<body class="admin-page">
+    <!-- Header do Admin -->
+    <header class="admin-header">
+        <div class="admin-header-left">
+            <h1>📋 Painel de Ofertas</h1>
+        </div>
+        <div class="admin-header-right">
+            <a href="index.html" class="btn btn-sm btn-ghost" title="Ver site público">👁️ Site</a>
+            <button id="logoutButton" class="btn btn-sm btn-ghost" title="Sair">🚪 Sair</button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="admin-main">
+        <!-- Barra de ações -->
+        <div class="admin-actions">
+            <h2>Todas as Ofertas</h2>
+            <button id="novaOfertaBtn" class="btn btn-primary">
+                <span class="btn-icon">＋</span>
+                Nova Oferta
+            </button>
+        </div>
+
+        <!-- Loading -->
+        <div id="adminLoading" class="admin-loading">
+            <div class="loading-spinner" style="position:relative;transform:none;margin:2rem auto;"></div>
+            <p>Carregando ofertas...</p>
+        </div>
+
+        <!-- Lista de ofertas -->
+        <div id="ofertasList" class="ofertas-list"></div>
+
+        <!-- Estado vazio -->
+        <div id="emptyAdminState" class="empty-admin hidden">
+            <div class="empty-admin-icon">📭</div>
+            <p>Nenhuma oferta cadastrada.</p>
+            <p class="empty-admin-sub">Clique em "Nova Oferta" para começar.</p>
+        </div>
+    </main>
+
+    <!-- Modal de Upload -->
+    <div id="uploadModal" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Nova Oferta</h2>
+                <button id="closeModalBtn" class="modal-close" aria-label="Fechar">✕</button>
+            </div>
+
+            <div class="modal-body">
+                <!-- Upload Drag & Drop -->
+                <div id="dropZone" class="drop-zone">
+                    <div class="drop-zone-content" id="dropZoneContent">
+                        <div class="drop-zone-icon">📤</div>
+                        <p class="drop-zone-text">Arraste uma imagem ou clique para selecionar</p>
+                        <p class="drop-zone-hint">JPG, JPEG, PNG, WEBP ou PDF (máx. 20MB)</p>
+                    </div>
+                    <input
+                        type="file"
+                        id="fileInput"
+                        accept=".jpg,.jpeg,.png,.webp,.pdf"
+                        class="file-input"
+                    />
+                </div>
+
+                <!-- Preview -->
+                <div id="previewArea" class="preview-area hidden">
+                    <div class="preview-container">
+                        <img id="previewImage" class="preview-image hidden" alt="Preview" />
+                        <div id="previewPDF" class="preview-pdf hidden">
+                            <span class="pdf-badge">PDF</span>
+                            <span id="pdfFileName"></span>
+                        </div>
+                    </div>
+                    <button id="removeFileBtn" class="btn btn-sm btn-danger">Remover arquivo</button>
+                </div>
+
+                <!-- Barra de progresso -->
+                <div id="progressArea" class="progress-area hidden">
+                    <div class="progress-bar">
+                        <div id="progressFill" class="progress-fill"></div>
+                    </div>
+                    <span id="progressText" class="progress-text">Enviando...</span>
+                </div>
+
+                <!-- Mensagens -->
+                <div id="uploadMessage" class="upload-message hidden"></div>
+            </div>
+
+            <div class="modal-footer">
+                <button id="cancelUploadBtn" class="btn btn-ghost">Cancelar</button>
+                <button id="confirmUploadBtn" class="btn btn-primary" disabled>
+                    Enviar Oferta
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmação de Exclusão -->
+    <div id="deleteModal" class="modal-overlay hidden">
+        <div class="modal modal-sm">
+            <div class="modal-header">
+                <h2>Confirmar Exclusão</h2>
+                <button id="closeDeleteModalBtn" class="modal-close" aria-label="Fechar">✕</button>
+            </div>
+            <div class="modal-body">
+                <p>Tem certeza que deseja excluir a oferta</p>
+                <p class="delete-item-name" id="deleteItemName"></p>
+                <p class="delete-warning">Esta ação não pode ser desfeita.</p>
+            </div>
+            <div class="modal-footer">
+                <button id="cancelDeleteBtn" class="btn btn-ghost">Cancelar</button>
+                <button id="confirmDeleteBtn" class="btn btn-danger">Excluir</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/admin.js"></script>
+</body>
+</html>

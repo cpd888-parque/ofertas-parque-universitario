@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0f0f0f">
+    <meta name="description" content="Confira as ofertas imperdíveis do Supermercado Ofertas">
+
+    <!-- Open Graph (compartilhamento) -->
+    <meta property="og:title" content="Atacadão Parque Universitário">
+    <meta property="og:description" content="Confira as ofertas imperdíveis do Atacadao Parque Universitário. Aproveite descontos exclusivos e economize em suas compras!">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://ofertas-parque-universitario.pages.dev">
+    <meta property="og:image" content="https://ofertas-parque-universitario.pages.dev/logo_atacadao.png">
+    <meta property="og:image:width" content="1080">
+    <meta property="og:image:height" content="246">
+    <meta name="twitter:card" content="summary_large_image">
+
+    <title>Atacadão Parque Universitário</title>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/style.css">
+
+    <!-- Pré-conexão para carregamento rápido -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <!-- Config -->
+    <script src="config/config.js"></script>
+</head>
+<body>
+    <!-- Loading Spinner -->
+    <div id="loadingSpinner" class="loading-spinner"></div>
+
+    <!-- Estado vazio (sem ofertas) -->
+    <div id="emptyState" class="empty-state hidden">
+        <div class="empty-icon">📭</div>
+        <p>Nenhuma oferta disponível no momento.</p>
+    </div>
+
+    <!-- Header -->
+    <header class="header"></header>
+
+    <!-- Contador -->
+    <div id="ofertaCounter" class="oferta-counter"></div>
+
+    <!-- Container principal de ofertas -->
+    <div id="ofertasContainer" class="ofertas-container">
+        <!-- Cards serão renderizados via JavaScript -->
+    </div>
+
+    <!-- Indicador de swipe -->
+    <div id="swipeIndicator" class="swipe-indicator">
+        <div class="arrow"></div>
+        <span>Deslize para ver mais</span>
+    </div>
+
+    <!-- Indicador pull-to-refresh -->
+    <div id="pullToRefresh" class="pull-to-refresh">
+        <div class="pull-to-refresh-spinner"></div>
+        <span class="pull-to-refresh-text">Solte para atualizar</span>
+    </div>
+
+    <!-- Footer - credito do desenvolvedor -->
+    <div id="creditFooter" class="credit-footer">
+        <span class="credit-text">Desenvolvido por Carlos Santos</span>
+    </div>
+
+    <!-- Script principal -->
+    <script src="js/app.js"></script>
+</body>
+</html>
