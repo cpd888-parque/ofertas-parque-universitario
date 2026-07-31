@@ -72,11 +72,10 @@ body {
     background: #0a0a0a;
     transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.4s ease;
     will-change: transform;
-    padding: 0 10px 10px;
+    padding: 0;
 }
 
 .oferta-card .oferta-imagem-wrapper {
-    border-radius: 8px;
     overflow: hidden;
 }
 
@@ -441,26 +440,14 @@ body {
     }
 
     .ofertas-container {
-        left: 50%;
-        transform: translateX(-50%);
-        width: 480px;
-        max-width: 90vw;
-        border-radius: 12px;
-        overflow: hidden;
-        box-shadow: 0 0 60px rgba(0,0,0,0.5), 0 0 120px rgba(229,57,53,0.08);
-        top: 50%;
-        height: 85vh;
-        max-height: 900px;
-        transform: translate(-50%, -50%);
-    }
-
-    /* Header acompanha a largura do container no desktop */
-    .header {
-        width: 480px;
-        max-width: 90vw;
-        left: 50%;
-        transform: translateX(-50%);
-        border-radius: 12px 12px 0 0;
+        width: 100%;
+        height: 100%;
+        height: 100dvh;
+        top: 0;
+        left: 0;
+        transform: none;
+        border-radius: 0;
+        box-shadow: none;
     }
 }
 
