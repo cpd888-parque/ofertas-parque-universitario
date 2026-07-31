@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0f0f0f">
+    <title>Login - Administração</title>
+
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/admin.css">
+
+    <script src="config/config.js"></script>
+</head>
+<body class="login-page">
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-logo">
+                <span class="login-logo-icon">🛒</span>
+                <h1>Administração</h1>
+                <p>Faça login para gerenciar as ofertas</p>
+            </div>
+
+            <form id="loginForm" class="login-form" autocomplete="off">
+                <div class="form-group">
+                    <label for="password">Senha de administrador</label>
+                    <div class="password-input-wrapper">
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            placeholder="Digite a senha"
+                            required
+                            autocomplete="current-password"
+                        />
+                        <button type="button" class="toggle-password" id="togglePassword" aria-label="Mostrar senha">
+                            👁️
+                        </button>
+                    </div>
+                </div>
+
+                <div id="loginError" class="login-error hidden">
+                    <span>⚠️</span>
+                    <span id="loginErrorMessage">Senha incorreta. Tente novamente.</span>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-full" id="loginButton">
+                    Entrar
+                </button>
+            </form>
+
+            <div class="login-footer">
+                <a href="index.html" class="back-link">← Voltar para ofertas</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/login.js"></script>
+</body>
+</html>
