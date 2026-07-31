@@ -38,15 +38,16 @@ const CONFIG = {
     },
 
     // Padronização de imagens no upload
-    // Garante que todas as ofertas tenham o MESMO tamanho, eliminando
-    // imagens cortadas ou com barras brancas no PC e no celular.
+    // Garante tamanhos consistentes e boa exibição no PC e no celular.
     imageStandardization: {
-        // Dimensões padrão (proporção 2:3, ideal para telas verticais)
+        // Dimensões máximas (limite para não gerar arquivos gigantes)
         width: 1080,
         height: 1620,
-        // 'cover'   - corta a imagem para preencher a TELA INTEIRA (sem bordas)
-        // 'contain' - mantém a imagem inteira com fundo escuro (barras)
-        mode: 'cover',
+        // 'natural' - preserva o formato original da imagem (SEM cortes e SEM barras).
+        //             O app se adapta: no celular preenche a tela, no PC mostra inteira.
+        // 'cover'   - corta para preencher a tela inteira (pode cortar laterais)
+        // 'contain' - mantém a imagem inteira com fundo escuro
+        mode: 'natural',
         // Ponto de foco do corte no modo 'cover': 'center' | 'top' | 'bottom'
         focus: 'center',
         // Cor de fundo usada no modo 'contain' (igual ao tema escuro do app)

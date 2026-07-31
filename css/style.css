@@ -130,6 +130,14 @@ body {
     z-index: 0;
 }
 
+/* Em telas na horizontal (PC/desktop), mostra a imagem INTEIRA,
+   cabendo na janela — sem zoom exagerado nem corte. */
+@media (orientation: landscape) {
+    .oferta-imagem {
+        object-fit: contain;
+    }
+}
+
 /* Placeholder enquanto carrega */
 .oferta-imagem.loading {
     opacity: 0;

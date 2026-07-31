@@ -6,10 +6,12 @@
  * cortadas ou com barras brancas — no PC e no celular.
  *
  * Modos:
- *   'contain' (padrão) — mantém a imagem inteira, encaixando-a no quadro com
- *                        uma cor de fundo configurável (escura, casando com o app).
+ *   'natural' (padrão) — preserva o formato original da imagem, apenas
+ *                        reduzindo para o tamanho máximo. Sem cortes e sem barras.
  *   'cover'             — corta a imagem para preencher exatamente o quadro,
  *                        sem barras. Use `focus` para escolher a parte preservada.
+ *   'contain'           — mantém a imagem inteira, encaixando-a no quadro com
+ *                        uma cor de fundo configurável (escura, casando com o app).
  *
  * Uso:
  *   const resultado = await ImageProcessor.process(file, CONFIG.imageStandardization);
@@ -22,7 +24,7 @@ const ImageProcessor = (() => {
         return {
             width: 1080,
             height: 1620,
-            mode: 'contain',     // 'contain' | 'cover'
+            mode: 'natural',     // 'natural' | 'cover' | 'contain'
             focus: 'center',     // 'center' | 'top' | 'bottom'
             background: '#0a0a0a',
             quality: 0.92,
@@ -76,14 +78,27 @@ const ImageProcessor = (() => {
             const targetRatio = cw / ch;
             const sourceRatio = iw / ih;
 
+            // 'natural': preserva a proporção original (sem cortes e sem barras),
+            // apenas reduz para caber no tamanho máximo.
+            let canvasW = cw;
+            let canvasH = ch;
+            if (opts.mode === 'natural') {
+                const s = Math.min(cw / iw, ch / ih, 1);
+                canvasW = Math.max(1, Math.round(iw * s));
+                canvasH = Math.max(1, Math.round(ih * s));
+            }
+
             const canvas = document.createElement('canvas');
-            canvas.width = cw;
-            canvas.height = ch;
+            canvas.width = canvasW;
+            canvas.height = canvasH;
             const ctx = canvas.getContext('2d');
             ctx.imageSmoothingEnabled = true;
             ctx.imageSmoothingQuality = 'high';
 
-            if (opts.mode === 'cover') {
+            if (opts.mode === 'natural') {
+                // Redimensiona mantendo a proporção (sem padding/corte)
+                ctx.drawImage(img, 0, 0, canvasW, canvasH);
+            } else if (opts.mode === 'cover') {
                 // ===== COVER: corta para preencher sem barras =====
                 let sx, sy, sw, sh;
                 if (sourceRatio > targetRatio) {
@@ -99,17 +114,17 @@ const ImageProcessor = (() => {
                     sx = 0;
                     sy = (ih - sh) * focusFactor(opts.focus);
                 }
-                ctx.drawImage(img, sx, sy, sw, sh, 0, 0, cw, ch);
+                ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvasW, canvasH);
             } else {
                 // ===== CONTAIN: imagem inteira + fundo escuro (sem branco) =====
                 ctx.fillStyle = opts.background;
-                ctx.fillRect(0, 0, cw, ch);
+                ctx.fillRect(0, 0, canvasW, canvasH);
 
                 // Escala de encaixe, sem ampliar além do tamanho original
-                const scale = Math.min(cw / iw, ch / ih, 1);
+                const scale = Math.min(canvasW / iw, canvasH / ih, 1);
                 const dw = iw * scale;
                 const dh = ih * scale;
-                ctx.drawImage(img, (cw - dw) / 2, (ch - dh) / 2, dw, dh);
+                ctx.drawImage(img, (canvasW - dw) / 2, (canvasH - dh) / 2, dw, dh);
             }
 
             const blob = await new Promise((resolve, reject) => {
@@ -122,8 +137,8 @@ const ImageProcessor = (() => {
             return {
                 file: processedFile,
                 objectUrl: URL.createObjectURL(processedFile),
-                width: cw,
-                height: ch
+                width: canvasW,
+                height: canvasH
             };
         } finally {
             if (isBitmap) img.close();
