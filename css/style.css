@@ -122,20 +122,14 @@ body {
 .oferta-imagem {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    /* Contém a imagem INTEIRA (sem cortar as beiradas), no PC e no celular.
+       Se sobrar espaço, aparece a cor escura do app — o conteúdo nunca é cortado. */
+    object-fit: contain;
     object-position: center;
     user-select: none;
     -webkit-user-drag: none;
     position: relative;
     z-index: 0;
-}
-
-/* Em telas na horizontal (PC/desktop), mostra a imagem INTEIRA,
-   cabendo na janela — sem zoom exagerado nem corte. */
-@media (orientation: landscape) {
-    .oferta-imagem {
-        object-fit: contain;
-    }
 }
 
 /* Placeholder enquanto carrega */
