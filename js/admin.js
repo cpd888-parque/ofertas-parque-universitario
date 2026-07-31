@@ -48,6 +48,7 @@ class AdminPanel {
         this.previewPDF = document.getElementById('previewPDF');
         this.pdfFileName = document.getElementById('pdfFileName');
         this.removeFileBtn = document.getElementById('removeFileBtn');
+        this.previewNoteEl = document.getElementById('previewNote');
 
         // Progress
         this.progressArea = document.getElementById('progressArea');
@@ -68,8 +69,8 @@ class AdminPanel {
         this.logoutBtn = document.getElementById('logoutButton');
 
         this.selectedFile = null;
-        this.processedFile = null;
-        this.previewObjectUrl = null;
+        this.processedFiles = [];      // arquivos prontos p/ upload (1 imagem ou N páginas de PDF)
+        this.previewObjectUrls = [];   // URLs de preview a liberar
     }
 
     bindEvents() {
@@ -252,8 +253,8 @@ class AdminPanel {
     // ===== UPLOAD - MODAL =====
     openUploadModal() {
         this.selectedFile = null;
-        this.processedFile = null;
-        this.revokePreviewUrl();
+        this.processedFiles = [];
+        this.revokePreviewUrls();
         this.fileInput.value = '';
         this.dropZone.classList.remove('hidden');
         this.previewArea.classList.add('hidden');
@@ -268,8 +269,8 @@ class AdminPanel {
         this.uploadModal.classList.add('hidden');
         document.body.style.overflow = '';
         this.selectedFile = null;
-        this.processedFile = null;
-        this.revokePreviewUrl();
+        this.processedFiles = [];
+        this.revokePreviewUrls();
         this.fileInput.value = '';
     }
 
@@ -295,23 +296,25 @@ class AdminPanel {
         }
 
         this.selectedFile = file;
-        this.processedFile = null;
-        this.revokePreviewUrl();
+        this.processedFiles = [];
+        this.revokePreviewUrls();
 
         const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
 
-        // Imagens são padronizadas; PDFs são convertidos em imagem (primeira página),
-        // para que a oferta apareça como imagem na tela (igual aos flyers).
+        // Imagens são padronizadas; PDFs são convertidos em imagem (todas as páginas),
+        // gerando uma oferta por página.
         try {
             this.showUploadMessage(isPDF ? 'Convertendo PDF para imagem...' : 'Padronizando imagem...', 'info');
             const result = isPDF
-                ? await ImageProcessor.fromPDF(file, CONFIG.imageStandardization)
+                ? await ImageProcessor.fromPDFPages(file, CONFIG.imageStandardization)
                 : await ImageProcessor.process(file, CONFIG.imageStandardization);
-            this.processedFile = result.file;
-            this.previewObjectUrl = result.objectUrl;
+            // `result.pages` (PDF) ou objeto único (imagem) viram uma lista uniforme
+            this.processedFiles = isPDF ? result.pages : [result];
+            this.previewObjectUrls = this.processedFiles.map((p) => p.objectUrl);
         } catch (e) {
             console.warn('Não foi possível processar, enviando arquivo original:', e);
-            this.processedFile = file;
+            this.processedFiles = [{ file, objectUrl: null }];
+            this.previewObjectUrls = [];
         }
         this.hideUploadMessage();
 
@@ -327,7 +330,7 @@ class AdminPanel {
         const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
 
         // PDF que não pôde ser convertido mantém o fallback de visualização
-        if (isPDF && !this.previewObjectUrl) {
+        if (isPDF && this.processedFiles.length === 0) {
             this.previewImage.classList.add('hidden');
             this.previewPDF.classList.remove('hidden');
             this.pdfFileName.textContent = file.name;
@@ -335,21 +338,31 @@ class AdminPanel {
             this.previewPDF.classList.add('hidden');
             this.previewImage.classList.remove('hidden');
             // Mostrar a imagem já processada (exatamente como será publicada)
-            this.previewImage.src = this.previewObjectUrl || URL.createObjectURL(file);
+            this.previewImage.src = this.previewObjectUrls[0] || URL.createObjectURL(file);
+        }
+
+        // Aviso quando o PDF gerar várias ofertas (uma por página)
+        if (this.previewNoteEl) {
+            if (isPDF && this.processedFiles.length > 1) {
+                this.previewNoteEl.textContent = `📄 PDF com ${this.processedFiles.length} páginas → serão publicadas ${this.processedFiles.length} ofertas`;
+                this.previewNoteEl.classList.remove('hidden');
+            } else {
+                this.previewNoteEl.classList.add('hidden');
+            }
         }
     }
 
-    revokePreviewUrl() {
-        if (this.previewObjectUrl) {
-            URL.revokeObjectURL(this.previewObjectUrl);
-            this.previewObjectUrl = null;
-        }
+    revokePreviewUrls() {
+        (this.previewObjectUrls || []).forEach((url) => {
+            if (url) URL.revokeObjectURL(url);
+        });
+        this.previewObjectUrls = [];
     }
 
     removeSelectedFile() {
         this.selectedFile = null;
-        this.processedFile = null;
-        this.revokePreviewUrl();
+        this.processedFiles = [];
+        this.revokePreviewUrls();
         this.fileInput.value = '';
         this.dropZone.classList.remove('hidden');
         this.previewArea.classList.add('hidden');
@@ -369,53 +382,60 @@ class AdminPanel {
         this.uploadMessage.classList.add('hidden');
         this.setProgress(0);
 
-        // A imagem já foi padronizada na seleção (ImageProcessor).
-        // PDFs são enviados sem alteração.
-        const fileToUpload = this.processedFile || this.selectedFile;
+        // Imagens já foram padronizadas na seleção (ImageProcessor);
+        // PDFs foram convertidos em imagem — uma oferta por página.
+        const files = this.processedFiles.length ? this.processedFiles : [{ file: this.selectedFile, objectUrl: null }];
+        const total = files.length;
 
         try {
-            if (CONFIG.api.baseUrl) {
-                // Upload via Worker
-                const formData = new FormData();
-                formData.append('file', fileToUpload);
+            for (let i = 0; i < total; i++) {
+                const fileToUpload = files[i].file;
 
-                const xhr = new XMLHttpRequest();
+                if (CONFIG.api.baseUrl) {
+                    // Upload via Worker
+                    const formData = new FormData();
+                    formData.append('file', fileToUpload);
 
-                xhr.upload.onprogress = (e) => {
-                    if (e.lengthComputable) {
-                        const pct = 15 + Math.round((e.loaded / e.total) * 75);
-                        this.setProgress(pct);
-                    }
+                    const xhr = new XMLHttpRequest();
+                    const startPct = (i / total) * 100;
+
+                    xhr.upload.onprogress = (e) => {
+                        if (e.lengthComputable) {
+                            const pct = startPct + Math.round((e.loaded / e.total) * (100 / total) * 0.9);
+                            this.setProgress(pct);
+                        }
+                    };
+
+                    await new Promise((resolve, reject) => {
+                        xhr.onload = () => {
+                            if (xhr.status === 200) resolve();
+                            else reject(new Error('Falha no upload'));
+                        };
+                        xhr.onerror = () => reject(new Error('Erro de conexão'));
+                        xhr.open('POST', `${CONFIG.api.baseUrl}${CONFIG.api.uploadEndpoint}`);
+                        xhr.send(formData);
+                    });
+                } else {
+                    // Upload local (demo)
+                    await this.simulateUpload();
+                }
+
+                // Adicionar oferta à lista local
+                const newOferta = {
+                    nome: this.selectedFile.name.replace(/\.[^/.]+$/, '') + (total > 1 ? ` (pág. ${i + 1})` : ''),
+                    tipo: fileToUpload.type || `image/${this.selectedFile.name.split('.').pop()}`,
+                    url: URL.createObjectURL(fileToUpload),
+                    data_upload: new Date().toISOString(),
+                    ordem: this.ofertas.length + 1
                 };
 
-                await new Promise((resolve, reject) => {
-                    xhr.onload = () => {
-                        if (xhr.status === 200) resolve();
-                        else reject(new Error('Falha no upload'));
-                    };
-                    xhr.onerror = () => reject(new Error('Erro de conexão'));
-                    xhr.open('POST', `${CONFIG.api.baseUrl}${CONFIG.api.uploadEndpoint}`);
-                    xhr.send(formData);
-                });
-            } else {
-                // Upload local (demo)
-                await this.simulateUpload();
+                this.ofertas.push(newOferta);
             }
 
-            // Adicionar oferta à lista local
-            const newOferta = {
-                nome: this.selectedFile.name.replace(/\.[^/.]+$/, ''),
-                tipo: fileToUpload.type || `image/${this.selectedFile.name.split('.').pop()}`,
-                url: URL.createObjectURL(fileToUpload),
-                data_upload: new Date().toISOString(),
-                ordem: this.ofertas.length + 1
-            };
-
-            this.ofertas.push(newOferta);
             this.saveLocalOfertas();
             this.renderList();
 
-            this.showUploadMessage('Oferta publicada com sucesso! ✅', 'success');
+            this.showUploadMessage(total > 1 ? `${total} ofertas publicadas com sucesso! ✅` : 'Oferta publicada com sucesso! ✅', 'success');
             this.setProgress(100);
 
             setTimeout(() => {
