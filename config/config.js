@@ -37,6 +37,24 @@ const CONFIG = {
         enableScroll: true,
     },
 
+    // Padronização de imagens no upload
+    // Garante que todas as ofertas tenham o MESMO tamanho, eliminando
+    // imagens cortadas ou com barras brancas no PC e no celular.
+    imageStandardization: {
+        // Dimensões padrão (proporção 2:3, ideal para telas verticais)
+        width: 1080,
+        height: 1620,
+        // 'contain' - mantém a imagem inteira com fundo escuro (padrão, seguro)
+        // 'cover'   - corta para preencher sem barras (use focus para controlar)
+        mode: 'contain',
+        // Ponto de foco do corte no modo 'cover': 'center' | 'top' | 'bottom'
+        focus: 'center',
+        // Cor de fundo usada no modo 'contain' (igual ao tema escuro do app)
+        background: '#0a0a0a',
+        // Qualidade JPEG (0 a 1)
+        quality: 0.92
+    },
+
     // Configuração administrativa
     admin: {
         // Senha do administrador (em produção, validar via Worker)
