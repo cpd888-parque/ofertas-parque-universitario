@@ -44,9 +44,9 @@ const CONFIG = {
         // Dimensões padrão (proporção 2:3, ideal para telas verticais)
         width: 1080,
         height: 1620,
-        // 'contain' - mantém a imagem inteira com fundo escuro (padrão, seguro)
-        // 'cover'   - corta para preencher sem barras (use focus para controlar)
-        mode: 'contain',
+        // 'cover'   - corta a imagem para preencher a TELA INTEIRA (sem bordas)
+        // 'contain' - mantém a imagem inteira com fundo escuro (barras)
+        mode: 'cover',
         // Ponto de foco do corte no modo 'cover': 'center' | 'top' | 'bottom'
         focus: 'center',
         // Cor de fundo usada no modo 'contain' (igual ao tema escuro do app)
