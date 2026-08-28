@@ -1,8 +1,9 @@
 /**
  * Login - Autenticação do Administrador
- * 
- * Sistema simplificado: senha única definida no config.js
- * Em produção, a validação será feita via Cloudflare Worker.
+ *
+ * A autenticação é validada SOMENTE pelo Worker (secret ADMIN_PASSWORD),
+ * que devolve um token Bearer de sessão. Não existe fallback local:
+ * a senha nunca fica no bundle do frontend.
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -40,45 +41,27 @@ document.addEventListener('DOMContentLoaded', () => {
         hideError();
 
         try {
-            // Tentar autenticar via Worker (se configurado)
-            let authenticated = false;
+            const response = await fetch(`${CONFIG.api.baseUrl}${CONFIG.api.loginEndpoint}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password })
+            });
 
-            if (CONFIG.api.baseUrl) {
-                const response = await fetch(`${CONFIG.api.baseUrl}${CONFIG.api.loginEndpoint}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ password })
-                });
+            const data = await response.json().catch(() => ({}));
 
-                if (response.ok) {
-                    const data = await response.json();
-                    authenticated = data.success === true;
-                }
-            }
-
-            // Fallback: autenticação local (desenvolvimento)
-            if (!authenticated) {
-                authenticated = password === CONFIG.admin.password;
-            }
-
-            if (authenticated) {
+            if (response.ok && data.success === true && data.token) {
+                // Guardar o token emitido pelo Worker e marcar sessão
+                sessionStorage.setItem(CONFIG.admin.tokenKey, data.token);
                 sessionStorage.setItem(CONFIG.admin.sessionKey, 'true');
                 window.location.href = 'admin.html';
-            } else {
-                showError('Senha incorreta. Tente novamente.');
-                passwordInput.value = '';
-                passwordInput.focus();
+                return;
             }
+
+            showError((data && data.error) || 'Senha incorreta. Tente novamente.');
+            passwordInput.value = '';
+            passwordInput.focus();
         } catch (err) {
-            // Fallback local se o Worker falhar
-            if (password === CONFIG.admin.password) {
-                sessionStorage.setItem(CONFIG.admin.sessionKey, 'true');
-                window.location.href = 'admin.html';
-            } else {
-                showError('Senha incorreta. Tente novamente.');
-                passwordInput.value = '';
-                passwordInput.focus();
-            }
+            showError('Não foi possível conectar ao servidor. Tente novamente.');
         }
 
         setLoading(false);

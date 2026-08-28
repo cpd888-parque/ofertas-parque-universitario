@@ -14,8 +14,9 @@ class AdminPanel {
     }
 
     init() {
-        // Verificar autenticação
-        if (sessionStorage.getItem(CONFIG.admin.sessionKey) !== 'true') {
+        // Gate de UI (a segurança real é no Worker, que exige o token Bearer)
+        if (sessionStorage.getItem(CONFIG.admin.sessionKey) !== 'true' ||
+            !sessionStorage.getItem(CONFIG.admin.tokenKey)) {
             window.location.href = 'login.html';
             return;
         }
@@ -23,6 +24,11 @@ class AdminPanel {
         this.cacheElements();
         this.bindEvents();
         this.loadOfertas();
+    }
+
+    // Token de sessão emitido pelo Worker no login
+    getAuthToken() {
+        return sessionStorage.getItem(CONFIG.admin.tokenKey) || '';
     }
 
     cacheElements() {
@@ -77,6 +83,7 @@ class AdminPanel {
         // Logout
         this.logoutBtn.addEventListener('click', () => {
             sessionStorage.removeItem(CONFIG.admin.sessionKey);
+            sessionStorage.removeItem(CONFIG.admin.tokenKey);
             window.location.href = 'login.html';
         });
 
@@ -201,14 +208,22 @@ class AdminPanel {
             thumb.className = 'oferta-item-thumb';
 
             if (this.isPDF(oferta)) {
-                thumb.innerHTML = '<span class="pdf-thumb">📄</span>';
+                const pdfBadge = document.createElement('span');
+                pdfBadge.className = 'pdf-thumb';
+                pdfBadge.textContent = '📄';
+                thumb.appendChild(pdfBadge);
             } else {
                 const img = document.createElement('img');
                 img.src = oferta.url;
                 img.alt = oferta.nome || 'Oferta';
                 img.loading = 'lazy';
                 img.onerror = () => {
-                    thumb.innerHTML = '<span style="font-size:1.5rem;opacity:0.4">🖼️</span>';
+                    thumb.textContent = '';
+                    const placeholder = document.createElement('span');
+                    placeholder.textContent = '🖼️';
+                    placeholder.style.fontSize = '1.5rem';
+                    placeholder.style.opacity = '0.4';
+                    thumb.appendChild(placeholder);
                 };
                 thumb.appendChild(img);
             }
@@ -227,7 +242,11 @@ class AdminPanel {
                 ? new Date(oferta.data_upload).toLocaleDateString('pt-BR')
                 : '—';
             const tipo = this.getFileTypeLabel(oferta.tipo || oferta.url);
-            meta.innerHTML = `<span>📅 ${data}</span> · <span>📁 ${tipo}</span>`;
+            const dataSpan = document.createElement('span');
+            dataSpan.textContent = `📅 ${data}`;
+            const tipoSpan = document.createElement('span');
+            tipoSpan.textContent = `📁 ${tipo}`;
+            meta.append(dataSpan, document.createTextNode(' · '), tipoSpan);
 
             info.appendChild(nome);
             info.appendChild(meta);
@@ -238,7 +257,7 @@ class AdminPanel {
 
             const deleteBtn = document.createElement('button');
             deleteBtn.className = 'btn btn-sm btn-danger';
-            deleteBtn.innerHTML = '🗑️ Excluir';
+            deleteBtn.textContent = '🗑️ Excluir';
             deleteBtn.addEventListener('click', () => this.openDeleteModal(oferta));
 
             actions.appendChild(deleteBtn);
@@ -409,10 +428,19 @@ class AdminPanel {
                     await new Promise((resolve, reject) => {
                         xhr.onload = () => {
                             if (xhr.status === 200) resolve();
-                            else reject(new Error('Falha no upload'));
+                            else if (xhr.status === 401) {
+                                // Token expirado/inválido → voltar para o login
+                                sessionStorage.removeItem(CONFIG.admin.sessionKey);
+                                sessionStorage.removeItem(CONFIG.admin.tokenKey);
+                                window.location.href = 'login.html';
+                                reject(new Error('Sessão expirada'));
+                            } else {
+                                reject(new Error('Falha no upload'));
+                            }
                         };
                         xhr.onerror = () => reject(new Error('Erro de conexão'));
                         xhr.open('POST', `${CONFIG.api.baseUrl}${CONFIG.api.uploadEndpoint}`);
+                        xhr.setRequestHeader('Authorization', `Bearer ${this.getAuthToken()}`);
                         xhr.send(formData);
                     });
                 } else {
@@ -491,12 +519,23 @@ class AdminPanel {
 
         try {
             if (CONFIG.api.baseUrl) {
-                // Exclusão via Worker
+                // Exclusão via Worker (autenticada com token Bearer)
                 const response = await fetch(`${CONFIG.api.baseUrl}${CONFIG.api.deleteEndpoint}`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${this.getAuthToken()}`
+                    },
                     body: JSON.stringify({ nome: this.deleteTarget.nome })
                 });
+
+                if (response.status === 401) {
+                    // Token expirado/inválido → voltar para o login
+                    sessionStorage.removeItem(CONFIG.admin.sessionKey);
+                    sessionStorage.removeItem(CONFIG.admin.tokenKey);
+                    window.location.href = 'login.html';
+                    return;
+                }
 
                 if (!response.ok) {
                     throw new Error('Falha na exclusão');

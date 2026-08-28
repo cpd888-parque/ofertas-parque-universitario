@@ -58,10 +58,13 @@ const CONFIG = {
 
     // Configuração administrativa
     admin: {
-        // Senha do administrador (em produção, validar via Worker)
-        password: 'REDACTED',
-        // Chave para sessionStorage
+        // A senha NÃO fica no frontend (nunca versionar segredos no bundle).
+        // A autenticação é feita pelo Worker contra o secret ADMIN_PASSWORD
+        // (`npx wrangler secret put ADMIN_PASSWORD`) e devolve um token Bearer.
+        // Chave para sessionStorage (gate de UI; a segurança real é no servidor)
         sessionKey: 'admin_logged_in',
+        // Chave para o token de sessão emitido pelo Worker no login
+        tokenKey: 'admin_token',
         // Tipos de arquivo permitidos no upload
         allowedTypes: [
             'image/jpeg',

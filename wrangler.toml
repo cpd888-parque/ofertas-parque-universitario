@@ -11,10 +11,13 @@ bucket_name = "ofertas-supermercado"
 
 # ===========================================
 # Variáveis de ambiente (sensíveis)
-# Use `npx wrangler secret put ADMIN_PASSWORD` em produção
+# A senha do administrador NUNCA fica no código nem no wrangler.toml.
+# Configure como secret (não versionado):
+#   npx wrangler secret put ADMIN_PASSWORD   (obrigatório, mín. 8 caracteres)
+# Opcional:
+#   npx wrangler secret put AUTH_SECRET      (segredo p/ assinar tokens de sessão)
+#   npx wrangler secret put ALLOWED_ORIGIN   (origens CORS extras, separadas por vírgula)
 # ===========================================
-# [vars]
-# ADMIN_PASSWORD = "REDACTED"
 
 # ===========================================
 # Rotas do Worker (opcional - usar com Pages)
