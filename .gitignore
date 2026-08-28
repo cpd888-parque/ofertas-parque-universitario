@@ -21,3 +21,6 @@ desktop.ini
 .env
 .env.local
 .env.production
+
+# Auditoria de segurança - artefatos locais (não versionar)
+docs/
